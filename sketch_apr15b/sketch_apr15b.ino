@@ -16,6 +16,8 @@ uint8_t tsa, tsb, tsc, ds;
 int32_t worldSize;
 uint8_t* world;
 
+uint32_t frame = 1;
+
 void setup() {
     /**
      * * The difference between the touch and non-touch versions is that the display 
@@ -55,25 +57,15 @@ void setup() {
     for (int i=0; i < worldSize; i++) {
       world[i] = 0;
     }
-
-    gfx->drawRect(1, 1, w-1, h-1, MAGENTA);
+    gfx->fillScreen(BLACK);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
-    // gfx->fillScreen(BLUE);
-//    gfx->drawLine(0, 0, cx, cy, RED);
-
-//    gfx->setCursor(0, 0);
-
-//    gfx->setTextSize(tsa);
-//    gfx->setTextColor(MAGENTA);
-//    gfx->println(F("Brett's Text"));
-
-// #ifdef CANVAS
-//     gfx->flush();
-// #endif
+    gfx->startWrite();
+ 
+    gfx->fillRect(0, 0, cx, 20, BLACK);
+    gfx->drawRect(1, 1, w-1, h-1, MAGENTA);
+    drawFrameData();
 
     while (true) {
       int rx = random(0, worldSize);
@@ -88,8 +80,18 @@ void loop() {
 
     drawWorld();
 
+    gfx->endWrite();
+    frame++;
     // delay(60 * 1000L);
 } 
+
+void drawFrameData() {
+   gfx->setCursor(0, 0);
+
+   gfx->setTextSize(tsa);
+   gfx->setTextColor(GREEN);
+   gfx->println(frame);
+}
 
 void drawWorld() {
 
