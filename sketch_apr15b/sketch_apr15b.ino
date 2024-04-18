@@ -25,9 +25,9 @@ void setup() {
     digitalWrite(38, OUTPUT);
 
     Serial.begin(115200);
-    // Serial.setDebugOutput(true);
-    // while(!Serial);
-    Serial.println("Arduino_GFX PDQgraphicstest example!");
+    Serial.setDebugOutput(true);
+    while(!Serial);
+    Serial.println("Snow!");
 
     // Init Display
     if (!gfx->begin())
@@ -79,8 +79,9 @@ void loop() {
       int rx = random(0, worldSize);
       int rb = random(0, 7);
 
-      if (world[rx] & 1 << rb == 0) {
-        world[rx] = world[rb] && 1 << rb;
+
+      if ((world[rx] & (1 << rb)) == 0) {
+        world[rx] = world[rx] | 1 << rb;
         break;
       }
     }
@@ -92,7 +93,7 @@ void loop() {
 
 void drawWorld() {
 
-  gfx->drawBitmap(0, 0, world, w / 8, h, WHITE);
+  gfx->drawBitmap(0, 0, world, w, h, WHITE);
 
 }
 
