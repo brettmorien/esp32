@@ -23,9 +23,7 @@ typedef struct Grain {
   uint32_t y;
 } Grain;
 
-Grain grain;
-
-const int numGrains = 5;
+const int numGrains = 50;
 Grain grains[numGrains];
 
 void setup() {
@@ -70,16 +68,21 @@ void setup() {
 
   Serial.printf("Screen - W: %d, H: %d", w, h);
 
-  for (int i=0; i < 20; i++) {
-    world[20000 + i] = 255;
-  }
+  int start = (h - 5) * w / 8;
+  int end = start + 3 * w / 8;
 
-  dropGrain(cx, 30);
+  for (int i=start; i < end; i++) {
+    world[i] = 255;
+  }
+  gfx->fillRect(0, 0, cx, 20, BLACK);
+  gfx->drawRect(1, 1, w - 1, h - 1, MAGENTA);
+
+  for (int i=0; i < numGrains; i++) {
+    dropGrain(i);
+  }
 }
 
 void loop() {
-  gfx->startWrite();
-
   gfx->fillRect(0, 0, cx, 20, BLACK);
   gfx->drawRect(1, 1, w - 1, h - 1, MAGENTA);
   drawFrameData();
@@ -87,7 +90,6 @@ void loop() {
   updateGrains();
   drawWorld();
 
-  gfx->endWrite();
   frame++;
 }
 
@@ -98,31 +100,31 @@ void drawRandomDot() {
   gfx->drawPixel(rx, ry, WHITE);
 }
 
-void dropGrain(int x, int y) {
-  grain.x = x;
-  grain.y = y;
+void dropGrain(int index) {
+  Grain* grain = &grains[index];
+  
+  grain->x = random(2, w - 2);
+  grain->y = random(3, 10);
 }
 
-bool go = true;
-
 void updateGrains() {
-  if (go) {
-    if (!moveGrain(&grain)) {
-      drawToWorld(grain);
-      go = false;
+  for (int i=0; i < numGrains; i++) {
+    Grain* grain = &grains[i];
+    if (!moveGrain(grain)) {
+      drawToWorld(*grain);
+      dropGrain(i);
     }
   }
 }
 
 bool moveGrain(Grain *g) {
-
-  if (g->y % 40 == 0) {
-    drawToWorld(*g);
-  }
-
-  if (g->y >= h) {
+  if (filledInWorld(g->x, g->y + 1)) {
     return false;
   }
+  
+  // if (g->y >= h - 5) {
+  //   return false;
+  // }
 
   gfx->drawPixel(g->x, g->y, BLACK);
   g->x = g->x;
@@ -140,6 +142,14 @@ void drawFrameData() {
   gfx->println(frame);
 }
 
+bool filledInWorld(int x, int y) {
+    //  W: 240, H: 536
+  int byte = y * (w / 8) + (x + 7) / 8;
+  int bit = y % 8;
+
+  return (world[byte] & 1 << (x % 8));
+}
+
 void drawToWorld(Grain grain) {
   //  W: 240, H: 536
   int x = (grain.x + 7) / 8;
@@ -147,7 +157,7 @@ void drawToWorld(Grain grain) {
   int byte = grain.y * (w / 8) + x;
   int bit = grain.y % 8;
 
-  world[byte] = world[byte] | 1 << ((x + 3) % 8);
+  world[byte] = world[byte] | 1 << (x % 8);
 }
 
 void drawWorld() {
