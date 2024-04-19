@@ -14,7 +14,7 @@ int32_t w, h, n, n1, cx, cy, cx1, cy1, cn, cn1;
 uint8_t tsa, tsb, tsc, ds;
 
 int32_t worldSize;
-uint8_t *world;
+uint8_t PROGMEM *world;
 
 uint32_t frame = 1;
 
@@ -23,7 +23,7 @@ typedef struct Grain {
   uint32_t y;
 } Grain;
 
-const int numGrains = 50;
+const int numGrains = 100;
 Grain grains[numGrains];
 
 void setup() {
@@ -104,7 +104,7 @@ void dropGrain(int index) {
   Grain* grain = &grains[index];
   
   grain->x = random(2, w - 2);
-  grain->y = random(3, 10);
+  grain->y = random(100, 350);
 }
 
 void updateGrains() {
@@ -145,7 +145,7 @@ void drawFrameData() {
 bool filledInWorld(int x, int y) {
     //  W: 240, H: 536
   int byte = y * (w / 8) + (x + 7) / 8;
-  int bit = y % 8;
+  int bit = x % 8;
 
   return (world[byte] & 1 << (x % 8));
 }
@@ -155,7 +155,7 @@ void drawToWorld(Grain grain) {
   int x = (grain.x + 7) / 8;
 
   int byte = grain.y * (w / 8) + x;
-  int bit = grain.y % 8;
+  int bit = grain.x % 8;
 
   world[byte] = world[byte] | 1 << (x % 8);
 }
