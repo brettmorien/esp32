@@ -21,6 +21,7 @@ uint32_t frame = 1;
 typedef struct Grain {
   uint32_t x;
   uint32_t y;
+  int32_t velo;
 } Grain;
 
 const int numGrains = 100;
@@ -66,7 +67,8 @@ void setup() {
   }
   gfx->fillScreen(BLACK);
 
-  Serial.printf("Screen - W: %d, H: %d", w, h);
+  //  W: 240, H: 536
+  Serial.printf("Screen - W: %d, H: %d\n", w, h);
 
   int start = (h - 5) * w / 8;
   int end = start + 3 * w / 8;
@@ -82,6 +84,14 @@ void setup() {
   }
 }
 
+// Next Steps
+/*
+  Multi-pixel drop rate
+  Variable speed drop
+  Collide and slide left/right
+  Obstacles
+*/
+
 void loop() {
   gfx->fillRect(0, 0, cx, 20, BLACK);
   gfx->drawRect(1, 1, w - 1, h - 1, MAGENTA);
@@ -93,42 +103,36 @@ void loop() {
   frame++;
 }
 
-void drawRandomDot() {
-  int rx = random(0, w);
-  int ry = random(0, h);
-
-  gfx->drawPixel(rx, ry, WHITE);
-}
-
 void dropGrain(int index) {
   Grain* grain = &grains[index];
   
-  grain->x = random(2, w - 2);
+  grain->x = random(cx - 50, cx + 50);
   grain->y = random(100, 350);
+  grain->velo = 10;
 }
 
 void updateGrains() {
   for (int i=0; i < numGrains; i++) {
     Grain* grain = &grains[i];
     if (!moveGrain(grain)) {
-      drawToWorld(*grain);
       dropGrain(i);
     }
   }
 }
 
 bool moveGrain(Grain *g) {
-  if (filledInWorld(g->x, g->y + 1)) {
+  gfx->drawPixel(g->x, g->y, BLACK);
+  int dist = findBelowDistance(*g);
+
+  if (dist < g->velo) {
+    g->y = g->y + dist - 1;
+    drawToWorld(*g);
+
     return false;
   }
-  
-  // if (g->y >= h - 5) {
-  //   return false;
-  // }
 
-  gfx->drawPixel(g->x, g->y, BLACK);
   g->x = g->x;
-  g->y = g->y + 1;
+  g->y = g->y + g->velo;
   gfx->drawPixel(g->x, g->y, WHITE);
 
   return true;
@@ -142,25 +146,31 @@ void drawFrameData() {
   gfx->println(frame);
 }
 
-bool filledInWorld(int x, int y) {
+int findBelowDistance(Grain g) {
+  for (int i=0; i < h - g.y; i++){
+    if (hit(g.x, g.y + i)) {
+      return i;
+    }
+  }
+  return h - g.y;
+}
+
+void drawToWorld(Grain g) {
+  //  W: 240, H: 536
+  int byte = g.y * (w / 8) + (g.x + 7) / 8;
+  int bit = g.x % 8;
+
+  world[byte] = world[byte] | 1 << bit;
+}
+
+void drawWorld() {
+  gfx->drawBitmap(0, 0, world, w, h, WHITE);
+}
+
+bool hit(int x, int y) {
     //  W: 240, H: 536
   int byte = y * (w / 8) + (x + 7) / 8;
   int bit = x % 8;
 
   return (world[byte] & 1 << (x % 8));
-}
-
-void drawToWorld(Grain grain) {
-  //  W: 240, H: 536
-  int x = (grain.x + 7) / 8;
-
-  int byte = grain.y * (w / 8) + x;
-  int bit = grain.x % 8;
-
-  world[byte] = world[byte] | 1 << (grain.x % 8);
-}
-
-void drawWorld() {
-
-  gfx->drawBitmap(0, 0, world, w, h, WHITE);
 }
