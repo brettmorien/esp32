@@ -157,7 +157,7 @@ void drawToWorld(Grain grain) {
   int byte = grain.y * (w / 8) + x;
   int bit = grain.x % 8;
 
-  world[byte] = world[byte] | 1 << (x % 8);
+  world[byte] = world[byte] | 1 << (grain.x % 8);
 }
 
 void drawWorld() {
