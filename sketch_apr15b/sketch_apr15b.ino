@@ -76,8 +76,6 @@ void setup() {
   for (int i=start; i < end; i++) {
     world[i] = 255;
   }
-  gfx->fillRect(0, 0, cx, 20, BLACK);
-  gfx->drawRect(1, 1, w - 1, h - 1, MAGENTA);
 
   for (int i=0; i < numGrains; i++) {
     dropGrain(i);
@@ -93,12 +91,12 @@ void setup() {
 */
 
 void loop() {
-  gfx->fillRect(0, 0, cx, 20, BLACK);
+  gfx->fillRect(0, 0, 60, 20, BLACK);
   gfx->drawRect(1, 1, w - 1, h - 1, MAGENTA);
   drawFrameData();
 
   updateGrains();
-  drawWorld();
+  // drawWorld();
 
   frame++;
 }
@@ -138,12 +136,26 @@ bool moveGrain(Grain *g) {
   return true;
 }
 
+int lastTime = millis();
+int startFrames = 0;
+int lastFrameRate = 0;
+
 void drawFrameData() {
+  int now = millis();
+
+  if (now - lastTime > 1000) {
+    lastTime = now;
+    lastFrameRate = frame - startFrames;
+    startFrames = frame;
+    }
+
   gfx->setCursor(0, 0);
 
   gfx->setTextSize(tsa);
   gfx->setTextColor(GREEN);
-  gfx->println(frame);
+  // gfx->println(frame);
+  gfx->println(lastFrameRate);
+
 }
 
 int findBelowDistance(Grain g) {
@@ -160,6 +172,7 @@ void drawToWorld(Grain g) {
   int byte = g.y * (w / 8) + (g.x + 7) / 8;
   int bit = g.x % 8;
 
+  gfx->drawPixel(g.x, g.y, WHITE);
   world[byte] = world[byte] | 1 << bit;
 }
 
