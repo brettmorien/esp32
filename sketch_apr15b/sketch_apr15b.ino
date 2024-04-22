@@ -106,9 +106,9 @@ void loop() {
 void dropGrain(int index) {
   Grain* grain = &grains[index];
   
-  grain->x = random(cx - 50, cx + 50);
-  grain->y = random(100, 350);
-  grain->velo = 10;
+  grain->x = random(cx - 100, cx + 100);
+  grain->y = random(0, 50);
+  grain->velo = 5;
 }
 
 void updateGrains() {
