@@ -11,15 +11,20 @@ Arduino_GFX *gfx = new Arduino_RM67162(bus, 17 /* RST */, 0 /* rotation */);
 #endif
 
 // run params
-const int numGrains = 100;
-const int velo = 7;
-const int dropWindow = 10;
 
 int32_t w, h, n, n1, cx, cy, cx1, cy1, cn, cn1;
 uint8_t tsa, tsb, tsc, ds;
 
 int32_t worldSize;
 uint8_t PROGMEM *world;
+
+typedef struct Source {
+  int numGrains = 100;
+  int velo = 7;
+  int dropWindow = 10;
+} Source;
+
+Source source;
 
 typedef struct FrameCount {
   uint32_t current = 1;
@@ -36,7 +41,7 @@ typedef struct Grain {
   int32_t velo;
 } Grain;
 
-Grain grains[numGrains];
+Grain* grains;
 
 void setup() {
   /**
@@ -88,7 +93,8 @@ void setup() {
     world[i] = 255;
   }
 
-  for (int i=0; i < numGrains; i++) {
+  grains = new Grain[source.numGrains];
+  for (int i=0; i < source.numGrains; i++) {
     dropGrain(i);
   }
   drawWorld();
@@ -115,13 +121,13 @@ void loop() {
 void dropGrain(int index) {
   Grain* grain = &grains[index];
   
-  grain->x = random(cx - dropWindow, cx + dropWindow);
+  grain->x = random(cx - source.dropWindow, cx + source.dropWindow);
   grain->y = random(0, 50);
-  grain->velo = velo;
+  grain->velo = source.velo;
 }
 
 void updateGrains() {
-  for (int i=0; i < numGrains; i++) {
+  for (int i=0; i < source.numGrains; i++) {
     Grain* grain = &grains[i];
     if (!moveGrain(grain)) {
       dropGrain(i);
