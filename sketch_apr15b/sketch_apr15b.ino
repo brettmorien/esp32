@@ -18,30 +18,40 @@ uint8_t tsa, tsb, tsc, ds;
 int32_t worldSize;
 uint8_t PROGMEM *world;
 
-typedef struct Source {
+class Source {
+public:
   int numGrains = 100;
   int velo = 7;
   int dropWindow = 10;
-} Source;
+};
 
 Source source;
 
-typedef struct FrameCount {
+class FrameData {
+public:
   uint32_t current = 1;
   int lastTime = millis();
   int start = 0;
   int last = 0;
-} FrameCount;
+  void Frame(int time) {
+    if (now - this->lastTime > 1000) {
+      this->lastTime = now;
+      this->last = this->current - this->start;
+      this->start = this->current;
+    }
+  }
+};
 
-FrameCount frames;
+FrameData frames;
 
-typedef struct Grain {
+class Grain {
+public:
   uint32_t x;
   uint32_t y;
   int32_t velo;
-} Grain;
+};
 
-Grain* grains;
+Grain *grains;
 
 void setup() {
   /**
@@ -53,7 +63,8 @@ void setup() {
 
   Serial.begin(115200);
   Serial.setDebugOutput(true);
-  while (!Serial);
+  while (!Serial)
+    ;
   Serial.println("Snow!");
 
   // Init Display
@@ -89,13 +100,13 @@ void setup() {
   int start = (h - 5) * w / 8;
   int end = start + 3 * w / 8;
 
-  for (int i=start; i < end; i++) {
+  for (int i = start; i < end; i++) {
     world[i] = 255;
   }
 
   grains = new Grain[source.numGrains];
-  for (int i=0; i < source.numGrains; i++) {
-    dropGrain(i);
+  for (int i = 0; i < source.numGrains; i++) {
+    dropGrain(source, i);
   }
   drawWorld();
 }
@@ -118,19 +129,21 @@ void loop() {
   frames.current++;
 }
 
-void dropGrain(int index) {
-  Grain* grain = &grains[index];
-  
-  grain->x = random(cx - source.dropWindow, cx + source.dropWindow);
+
+
+void dropGrain(Source s, int index) {
+  Grain *grain = &grains[index];
+
+  grain->x = random(cx - s.dropWindow, cx + s.dropWindow);
   grain->y = random(0, 50);
-  grain->velo = source.velo;
+  grain->velo = s.velo;
 }
 
 void updateGrains() {
-  for (int i=0; i < source.numGrains; i++) {
-    Grain* grain = &grains[i];
+  for (int i = 0; i < source.numGrains; i++) {
+    Grain *grain = &grains[i];
     if (!moveGrain(grain)) {
-      dropGrain(i);
+      dropGrain(source, i);
     }
   }
 }
@@ -171,20 +184,21 @@ bool slide(Grain *g) {
 
 bool slip(Grain *g, int dist) {
   if (!hit(g->x + dist, g->y + 1)) {
-      g->x += dist;
-      return true;
-    }
-    return false;
+    g->x += dist;
+    return true;
+  }
+  return false;
 }
 
 void drawFrameData() {
   int now = millis();
+  
 
-  if (now - frames.lastTime > 1000) {
-    frames.lastTime = now;
-    frames.last = frames.current - frames.start;
-    frames.start = frames.current;
-  }
+  // if (now - frames.lastTime > 1000) {
+  //   frames.lastTime = now;
+  //   frames.last = frames.current - frames.start;
+  //   frames.start = frames.current;
+  // }
 
   gfx->setCursor(0, 0);
 
@@ -192,11 +206,10 @@ void drawFrameData() {
   gfx->setTextColor(GREEN);
   // gfx->println(frame);
   gfx->println(frames.last);
-
 }
 
 int findBelowDistance(Grain g) {
-  for (int i=0; i < h - g.y; i++){
+  for (int i = 0; i < h - g.y; i++) {
     if (hit(g.x, g.y + i)) {
       return i - 1;
     }
@@ -218,7 +231,7 @@ void drawWorld() {
 }
 
 bool hit(int x, int y) {
-    //  W: 240, H: 536
+  //  W: 240, H: 536
   int byte = y * (w / 8) + (x + 7) / 8;
   int bit = x % 8;
 
