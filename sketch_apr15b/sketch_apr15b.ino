@@ -10,6 +10,11 @@ Arduino_GFX *gfx = new Arduino_RM67162(bus, 17 /* RST */, 0 /* rotation */);
 #define F(s) (s)
 #endif
 
+// run params
+const int numGrains = 200;
+const int velo = 9;
+const int dropWindow = 120;
+
 int32_t w, h, n, n1, cx, cy, cx1, cy1, cn, cn1;
 uint8_t tsa, tsb, tsc, ds;
 
@@ -24,7 +29,6 @@ typedef struct Grain {
   int32_t velo;
 } Grain;
 
-const int numGrains = 100;
 Grain grains[numGrains];
 
 void setup() {
@@ -104,9 +108,9 @@ void loop() {
 void dropGrain(int index) {
   Grain* grain = &grains[index];
   
-  grain->x = random(cx - 100, cx + 100);
+  grain->x = random(cx - dropWindow, cx + dropWindow);
   grain->y = random(0, 50);
-  grain->velo = 5;
+  grain->velo = velo;
 }
 
 void updateGrains() {
@@ -122,7 +126,7 @@ bool moveGrain(Grain *g) {
   gfx->drawPixel(g->x, g->y, BLACK);
   int dist = findBelowDistance(*g);
 
-  if (dist < g->velo) {
+  if (dist <= g->velo) {
     g->y = g->y + dist - 1;
     drawToWorld(*g);
 
