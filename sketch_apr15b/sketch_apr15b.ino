@@ -11,9 +11,9 @@ Arduino_GFX *gfx = new Arduino_RM67162(bus, 17 /* RST */, 0 /* rotation */);
 #endif
 
 // run params
-const int numGrains = 200;
-const int velo = 9;
-const int dropWindow = 120;
+const int numGrains = 100;
+const int velo = 7;
+const int dropWindow = 10;
 
 int32_t w, h, n, n1, cx, cy, cx1, cy1, cn, cn1;
 uint8_t tsa, tsb, tsc, ds;
@@ -91,6 +91,7 @@ void setup() {
   for (int i=0; i < numGrains; i++) {
     dropGrain(i);
   }
+  drawWorld();
 }
 
 // Next Steps
@@ -107,7 +108,6 @@ void loop() {
   drawFrameData();
 
   updateGrains();
-  // drawWorld();
 
   frames.current++;
 }
@@ -133,8 +133,12 @@ bool moveGrain(Grain *g) {
   gfx->drawPixel(g->x, g->y, BLACK);
   int dist = findBelowDistance(*g);
 
-  if (dist <= g->velo) {
-    g->y = g->y + dist - 1;
+  if (dist < g->velo) {
+    g->y = g->y + dist;
+    if (slide(g)) {
+      return true;
+    }
+
     drawToWorld(*g);
 
     return false;
@@ -147,6 +151,26 @@ bool moveGrain(Grain *g) {
   return true;
 }
 
+bool slide(Grain *g) {
+  int left = random(0, 1) == 0;
+
+  if (slip(g, left ? -1 : 1)) {
+    return true;
+  } else if (slip(g, left ? 1 : -11)) {
+    return true;
+  }
+
+  return false;
+}
+
+bool slip(Grain *g, int dist) {
+  if (!hit(g->x + dist, g->y + 1)) {
+      g->x += dist;
+      return true;
+    }
+    return false;
+}
+
 void drawFrameData() {
   int now = millis();
 
@@ -154,12 +178,13 @@ void drawFrameData() {
     frames.lastTime = now;
     frames.last = frames.current - frames.start;
     frames.start = frames.current;
-    }
+  }
 
   gfx->setCursor(0, 0);
 
   gfx->setTextSize(tsa);
   gfx->setTextColor(GREEN);
+  // gfx->println(frame);
   gfx->println(frames.last);
 
 }
@@ -167,10 +192,10 @@ void drawFrameData() {
 int findBelowDistance(Grain g) {
   for (int i=0; i < h - g.y; i++){
     if (hit(g.x, g.y + i)) {
-      return i;
+      return i - 1;
     }
   }
-  return h - g.y;
+  return h - g.y - 1;
 }
 
 void drawToWorld(Grain g) {
