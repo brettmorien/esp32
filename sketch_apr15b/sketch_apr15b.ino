@@ -21,7 +21,14 @@ uint8_t tsa, tsb, tsc, ds;
 int32_t worldSize;
 uint8_t PROGMEM *world;
 
-uint32_t frame = 1;
+typedef struct FrameCount {
+  uint32_t current = 1;
+  int lastTime = millis();
+  int start = 0;
+  int last = 0;
+} FrameCount;
+
+FrameCount frames;
 
 typedef struct Grain {
   uint32_t x;
@@ -102,7 +109,7 @@ void loop() {
   updateGrains();
   // drawWorld();
 
-  frame++;
+  frames.current++;
 }
 
 void dropGrain(int index) {
@@ -140,25 +147,20 @@ bool moveGrain(Grain *g) {
   return true;
 }
 
-int lastTime = millis();
-int startFrames = 0;
-int lastFrameRate = 0;
-
 void drawFrameData() {
   int now = millis();
 
-  if (now - lastTime > 1000) {
-    lastTime = now;
-    lastFrameRate = frame - startFrames;
-    startFrames = frame;
+  if (now - frames.lastTime > 1000) {
+    frames.lastTime = now;
+    frames.last = frames.current - frames.start;
+    frames.start = frames.current;
     }
 
   gfx->setCursor(0, 0);
 
   gfx->setTextSize(tsa);
   gfx->setTextColor(GREEN);
-  // gfx->println(frame);
-  gfx->println(lastFrameRate);
+  gfx->println(frames.last);
 
 }
 
