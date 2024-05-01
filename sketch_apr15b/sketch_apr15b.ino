@@ -11,38 +11,24 @@ Arduino_GFX *gfx = new Arduino_RM67162(bus, 17 /* RST */, 0 /* rotation */);
 #endif
 
 // run params
-
 int32_t w, h, n, n1, cx, cy, cx1, cy1, cn, cn1;
 uint8_t tsa, tsb, tsc, ds;
 
 int32_t worldSize;
 uint8_t PROGMEM *world;
 
-class Source {
-public:
-  int numGrains = 100;
-  int velo = 7;
-  int dropWindow = 10;
-};
 
-Source source;
+// Next Steps
+/*
+  Move source
+  Multi-source
+  Gravity
+  Obstacles
+*/
 
-class FrameData {
-public:
-  uint32_t current = 1;
-  int lastTime = millis();
-  int start = 0;
-  int last = 0;
-  void Frame(int time) {
-    if (now - this->lastTime > 1000) {
-      this->lastTime = now;
-      this->last = this->current - this->start;
-      this->start = this->current;
-    }
-  }
-};
-
-FrameData frames;
+// class World {
+//   gravity
+// }
 
 class Grain {
 public:
@@ -52,6 +38,54 @@ public:
 };
 
 Grain *grains;
+
+class Source {
+public:
+  int numGrains = 100;
+  int velo = 7;
+  int dropWindow = 10;
+  int oX = cx;
+  int oY = 0;
+
+  void dropGrain(int index) {
+    Grain *grain = &grains[index];
+
+    grain->x = random(this->oX - this->dropWindow, this->oX + this->dropWindow);
+    grain->y = random(0, 50);
+    grain->velo = this->velo;
+  }
+};
+
+Source source;
+
+class FrameData {
+private:
+  int lastTime = millis();
+  int start = 0;
+  int last = 0;
+  uint32_t current = 1;
+
+public:
+  void Next(int now) {
+    this->current++;
+    if (now - this->lastTime > 1000) {
+      this->lastTime = now;
+      this->last = this->current - this->start;
+      this->start = this->current;
+    }
+  }
+
+
+  void Debug() {
+    gfx->setCursor(0, 0);
+
+    gfx->setTextSize(tsa);
+    gfx->setTextColor(GREEN);
+    gfx->println(this->last);
+  }
+};
+
+FrameData frames;
 
 void setup() {
   /**
@@ -106,44 +140,47 @@ void setup() {
 
   grains = new Grain[source.numGrains];
   for (int i = 0; i < source.numGrains; i++) {
-    dropGrain(source, i);
+    source.dropGrain(i);
   }
   drawWorld();
 }
 
-// Next Steps
-/*
-  Multi-pixel drop rate
-  Variable speed drop
-  Collide and slide left/right
-  Obstacles
-*/
-
 void loop() {
   gfx->fillRect(0, 0, 60, 20, BLACK);
   gfx->drawRect(1, 1, w - 1, h - 1, MAGENTA);
-  drawFrameData();
 
+  frames.Next(millis());
+  frames.Debug();
+
+  moveSource();
   updateGrains();
-
-  frames.current++;
 }
 
+bool right = true;
+void moveSource() {
+  int rb = cx + 50;
+  int lb = cx - 50;
 
-
-void dropGrain(Source s, int index) {
-  Grain *grain = &grains[index];
-
-  grain->x = random(cx - s.dropWindow, cx + s.dropWindow);
-  grain->y = random(0, 50);
-  grain->velo = s.velo;
+  if (right) {
+    if (source.oX < rb) {
+      source.oX += 1;
+    } else {
+      right = false;
+    }
+  } else {
+    if (source.oX > lb) {
+      source.oX -= 1;
+    } else {
+      right = true;
+    }
+  }
 }
 
 void updateGrains() {
   for (int i = 0; i < source.numGrains; i++) {
     Grain *grain = &grains[i];
     if (!moveGrain(grain)) {
-      dropGrain(source, i);
+      source.dropGrain(i);
     }
   }
 }
@@ -188,24 +225,6 @@ bool slip(Grain *g, int dist) {
     return true;
   }
   return false;
-}
-
-void drawFrameData() {
-  int now = millis();
-  
-
-  // if (now - frames.lastTime > 1000) {
-  //   frames.lastTime = now;
-  //   frames.last = frames.current - frames.start;
-  //   frames.start = frames.current;
-  // }
-
-  gfx->setCursor(0, 0);
-
-  gfx->setTextSize(tsa);
-  gfx->setTextColor(GREEN);
-  // gfx->println(frame);
-  gfx->println(frames.last);
 }
 
 int findBelowDistance(Grain g) {
