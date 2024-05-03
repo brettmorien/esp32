@@ -10,13 +10,11 @@ Arduino_GFX *gfx = new Arduino_RM67162(bus, 17 /* RST */, 0 /* rotation */);
 #define F(s) (s)
 #endif
 
+#define GRAY RGB565(128, 128, 128)
+
 // run params
-int32_t w, h, n, n1, cx, cy, cx1, cy1, cn, cn1;
+int32_t w, h, cx, cy;
 uint8_t tsa, tsb, tsc, ds;
-
-int32_t worldSize;
-uint8_t PROGMEM *world;
-
 
 // Next Steps
 /*
@@ -26,32 +24,175 @@ uint8_t PROGMEM *world;
   Obstacles
 */
 
-// class World {
-//   gravity
-// }
+class World {
+private:
+  uint8_t PROGMEM *surface;
+  int w;
+  int h;
+  //  gravity
+public:
+
+  World(int w, int h) {
+    this->w = w;
+    this->h = h;
+
+    int worldSize = w * h / 8;
+    this->surface = new uint8_t[worldSize];
+    int start = (h - 5) * w / 8;
+    for (int i = 0; i < worldSize; i++) {
+      this->surface[i] = (i < start) ? 0 : 255;
+    }
+  }
+
+  void drawGrain(int x, int y) {
+    //  W: 240, H: 536
+    int byte = y * (w / 8) + (x + 7) / 8;
+    int bit = x % 8;
+
+    gfx->drawPixel(x, y, WHITE);
+    this->surface[byte] = this->surface[byte] | 1 << bit;
+  }
+
+  void drawWorld() {
+    gfx->drawBitmap(0, 0, this->surface, this->w, this->h, WHITE);
+  }
+
+  bool hit(int x, int y) {
+    //  W: 240, H: 536
+    int byte = y * (w / 8) + (x + 7) / 8;
+    int bit = x % 8;
+
+    return (this->surface[byte] & 1 << (x % 8));
+  }
+};
+
+World *world;
 
 class Grain {
 public:
   uint32_t x;
   uint32_t y;
   int32_t velo;
-};
+  bool active;
 
-Grain *grains;
+  void drop(int x, int y) {
+    this->x = x;
+    this->y = y;
+    this->active = true;
+  }
+
+  void Update() {
+    if (!this->active) {
+      return;
+    }
+
+    if (!move()) {
+      this->active = false;
+    }
+  }
+
+private:
+  bool move() {
+    Grain *g = this;
+    gfx->drawPixel(g->x, g->y, BLACK);
+    int dist = g->findBelowDistance();
+
+    if (dist < g->velo) {
+      g->y = g->y + dist;
+      if (g->slide()) {
+        return true;
+      }
+
+      world->drawGrain(this->x, this->y);
+
+      return false;
+    }
+
+    g->x = g->x;
+    g->y = g->y + g->velo;
+    gfx->drawPixel(g->x, g->y, BLUE);
+
+    return true;
+  }
+
+  int findBelowDistance() {
+    for (int i = 0; i < h - this->y; i++) {
+      if (world->hit(this->x, this->y + i)) {
+        return i - 1;
+      }
+    }
+    return h - this->y - 1;
+  }
+
+  bool slide() {
+    int left = random(0, 1) == 0;
+
+    if (this->slip(left ? -1 : 1)) {
+      return true;
+    } else if (this->slip(left ? 1 : -11)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool slip(int dist) {
+    if (!world->hit(this->x + dist, this->y + 1)) {
+      this->x += dist;
+      return true;
+    }
+    return false;
+  }
+};
 
 class Source {
 public:
-  int numGrains = 100;
+  int numGrains = 300;
   int velo = 7;
   int dropWindow = 10;
-  int oX = cx;
-  int oY = 0;
+  int x = cx;
+  int y = 5;
+  int interval;
+  Grain *grains;
+  int nextIndex = 0;
 
+  Source() {
+    int rate = 100;
+    this->interval = 1000/rate;
+    this->grains = new Grain[this->numGrains];
+    for (int i = 0; i < this->numGrains; i++) {
+      this->dropGrain(i);
+    }
+  }
+
+  int lastDropTime;
+  void next(int time) {
+    int count = time / interval - lastDropTime / interval;
+
+    if (count > 0) {
+      this->lastDropTime = (time / interval) * interval;  // round down to interval
+      for (int i=0; i < count; ++i) {
+        this->dropGrain(this->nextIndex + i);
+      }
+      this->nextIndex = (this->nextIndex + count) % this->numGrains;
+    }
+  }
+
+  void updateGrains() {
+    for (int i = 0; i < this->numGrains; i++) {
+      Grain *grain = &this->grains[i];
+      grain->Update();
+    }
+  }
+
+private:
   void dropGrain(int index) {
-    Grain *grain = &grains[index];
+    Grain *grain = &this->grains[index];
 
-    grain->x = random(this->oX - this->dropWindow, this->oX + this->dropWindow);
-    grain->y = random(0, 50);
+    int x = random(this->x - this->dropWindow, this->x + this->dropWindow);
+    int y = random(0, 50);
+
+    grain->drop(x, y);
     grain->velo = this->velo;
   }
 };
@@ -81,7 +222,8 @@ public:
 
     gfx->setTextSize(tsa);
     gfx->setTextColor(GREEN);
-    gfx->println(this->last);
+    // gfx->println(this->last);
+    gfx->println(source.nextIndex);
   }
 };
 
@@ -108,41 +250,23 @@ void setup() {
 
   w = gfx->width();
   h = gfx->height();
-  n = min(w, h);
-  n1 = n - 1;
   cx = w / 2;
   cy = h / 2;
-  cx1 = cx - 1;
-  cy1 = cy - 1;
-  cn = min(cx1, cy1);
-  cn1 = cn - 1;
   tsa = ((w <= 176) || (h <= 160)) ? 1 : (((w <= 240) || (h <= 240)) ? 2 : 3);  // text size A
   tsb = ((w <= 272) || (h <= 220)) ? 1 : 2;                                     // text size B
   tsc = ((w <= 220) || (h <= 220)) ? 1 : 2;                                     // text size C
   ds = (w <= 160) ? 9 : 12;                                                     // digit size
 
-  worldSize = w * h / 8;
-  world = new uint8_t[worldSize];
-  for (int i = 0; i < worldSize; i++) {
-    world[i] = 0;
-  }
   gfx->fillScreen(BLACK);
 
   //  W: 240, H: 536
   Serial.printf("Screen - W: %d, H: %d\n", w, h);
 
-  int start = (h - 5) * w / 8;
-  int end = start + 3 * w / 8;
+  world = new World(w, h);
 
-  for (int i = start; i < end; i++) {
-    world[i] = 255;
-  }
+  source.x = cx;
 
-  grains = new Grain[source.numGrains];
-  for (int i = 0; i < source.numGrains; i++) {
-    source.dropGrain(i);
-  }
-  drawWorld();
+  world->drawWorld();
 }
 
 void loop() {
@@ -153,106 +277,29 @@ void loop() {
   frames.Debug();
 
   moveSource();
-  updateGrains();
+  source.next(millis());
+  source.updateGrains();
 }
 
 bool right = true;
 void moveSource() {
+  gfx->drawPixel(source.x, source.y, BLACK);
   int rb = cx + 50;
   int lb = cx - 50;
 
   if (right) {
-    if (source.oX < rb) {
-      source.oX += 1;
+    if (source.x < rb) {
+      source.x += 1;
     } else {
       right = false;
     }
   } else {
-    if (source.oX > lb) {
-      source.oX -= 1;
+    if (source.x > lb) {
+      source.x -= 1;
     } else {
       right = true;
     }
   }
-}
+  gfx->drawPixel(source.x, source.y, BLUE);
 
-void updateGrains() {
-  for (int i = 0; i < source.numGrains; i++) {
-    Grain *grain = &grains[i];
-    if (!moveGrain(grain)) {
-      source.dropGrain(i);
-    }
-  }
-}
-
-bool moveGrain(Grain *g) {
-  gfx->drawPixel(g->x, g->y, BLACK);
-  int dist = findBelowDistance(*g);
-
-  if (dist < g->velo) {
-    g->y = g->y + dist;
-    if (slide(g)) {
-      return true;
-    }
-
-    drawToWorld(*g);
-
-    return false;
-  }
-
-  g->x = g->x;
-  g->y = g->y + g->velo;
-  gfx->drawPixel(g->x, g->y, WHITE);
-
-  return true;
-}
-
-bool slide(Grain *g) {
-  int left = random(0, 1) == 0;
-
-  if (slip(g, left ? -1 : 1)) {
-    return true;
-  } else if (slip(g, left ? 1 : -11)) {
-    return true;
-  }
-
-  return false;
-}
-
-bool slip(Grain *g, int dist) {
-  if (!hit(g->x + dist, g->y + 1)) {
-    g->x += dist;
-    return true;
-  }
-  return false;
-}
-
-int findBelowDistance(Grain g) {
-  for (int i = 0; i < h - g.y; i++) {
-    if (hit(g.x, g.y + i)) {
-      return i - 1;
-    }
-  }
-  return h - g.y - 1;
-}
-
-void drawToWorld(Grain g) {
-  //  W: 240, H: 536
-  int byte = g.y * (w / 8) + (g.x + 7) / 8;
-  int bit = g.x % 8;
-
-  gfx->drawPixel(g.x, g.y, WHITE);
-  world[byte] = world[byte] | 1 << bit;
-}
-
-void drawWorld() {
-  gfx->drawBitmap(0, 0, world, w, h, WHITE);
-}
-
-bool hit(int x, int y) {
-  //  W: 240, H: 536
-  int byte = y * (w / 8) + (x + 7) / 8;
-  int bit = x % 8;
-
-  return (world[byte] & 1 << (x % 8));
 }
