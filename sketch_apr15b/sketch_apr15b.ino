@@ -110,7 +110,7 @@ private:
 
     g->x = g->x;
     g->y = g->y + g->velo;
-    gfx->drawPixel(g->x, g->y, BLUE);
+    gfx->drawPixel(g->x, g->y, GRAY);
 
     return true;
   }
@@ -145,24 +145,28 @@ private:
   }
 };
 
+const int numGrains = 300;
 class Source {
 public:
-  int numGrains = 300;
-  int velo = 7;
+  // int numGrains = 300;
+  int velo = 3;
   int dropWindow = 10;
   int x = cx;
   int y = 5;
   int interval;
-  Grain *grains;
+  Grain grains[numGrains];
   int nextIndex = 0;
 
   Source() {
-    int rate = 100;
+    int rate = 5;
     this->interval = 1000/rate;
-    this->grains = new Grain[this->numGrains];
-    for (int i = 0; i < this->numGrains; i++) {
-      this->dropGrain(i);
-    }
+    // this->grains = new Grain[numGrains];
+    // for (int i = 0; i < numGrains; i++) {
+    //   this->dropGrain(i);
+    // }
+
+    Serial.println("Done creating source");
+
   }
 
   int lastDropTime;
@@ -174,14 +178,14 @@ public:
       for (int i=0; i < count; ++i) {
         this->dropGrain(this->nextIndex + i);
       }
-      this->nextIndex = (this->nextIndex + count) % this->numGrains;
+      this->nextIndex = (this->nextIndex + count) % numGrains;
     }
   }
 
   void updateGrains() {
-    for (int i = 0; i < this->numGrains; i++) {
-      Grain *grain = &this->grains[i];
-      grain->Update();
+    for (int i = 0; i < numGrains; i++) {
+      Grain grain = this->grains[i];
+      grain.Update();
     }
   }
 
@@ -300,6 +304,6 @@ void moveSource() {
       right = true;
     }
   }
-  gfx->drawPixel(source.x, source.y, BLUE);
+  gfx->drawPixel(source.x, source.y, RED);
 
 }
