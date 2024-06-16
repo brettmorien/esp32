@@ -1,4 +1,6 @@
 #include <Arduino_GFX_Library.h>
+#include "grain.h"
+$include "draw.h"
 
 #define GFX_DEV_DEVICE LILYGO_T_DISPLAY_S3_AMOLED
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
@@ -68,83 +70,6 @@ public:
 
 World *world;
 
-class Grain {
-public:
-  uint32_t x;
-  uint32_t y;
-  int32_t velo;
-  bool active;
-
-  void drop(int x, int y) {
-    this->x = x;
-    this->y = y;
-    this->active = true;
-  }
-
-  void Update() {
-    if (!this->active) {
-      return;
-    }
-
-    if (!move()) {
-      this->active = false;
-    }
-  }
-
-private:
-  bool move() {
-    Grain *g = this;
-    gfx->drawPixel(g->x, g->y, BLACK);
-    int dist = g->findBelowDistance();
-
-    if (dist < g->velo) {
-      g->y = g->y + dist;
-      if (g->slide()) {
-        return true;
-      }
-
-      world->drawGrain(this->x, this->y);
-
-      return false;
-    }
-
-    g->x = g->x;
-    g->y = g->y + g->velo;
-    gfx->drawPixel(g->x, g->y, GRAY);
-
-    return true;
-  }
-
-  int findBelowDistance() {
-    for (int i = 0; i < h - this->y; i++) {
-      if (world->hit(this->x, this->y + i)) {
-        return i - 1;
-      }
-    }
-    return h - this->y - 1;
-  }
-
-  bool slide() {
-    int left = random(0, 1) == 0;
-
-    if (this->slip(left ? -1 : 1)) {
-      return true;
-    } else if (this->slip(left ? 1 : -11)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  bool slip(int dist) {
-    if (!world->hit(this->x + dist, this->y + 1)) {
-      this->x += dist;
-      return true;
-    }
-    return false;
-  }
-};
-
 const int numGrains = 300;
 class Source {
 public:
@@ -201,7 +126,8 @@ private:
   }
 };
 
-Source source;
+// Serial.println("init source");
+Source* source = new Source();
 
 class FrameData {
 private:
@@ -243,9 +169,13 @@ void setup() {
 
   Serial.begin(115200);
   Serial.setDebugOutput(true);
-  while (!Serial)
-    ;
+  
+  // Wait for serial connection
+  while (!Serial);
+
   Serial.println("Snow!");
+  
+  Draw* d = new Draw(gfx);
 
   // Init Display
   if (!gfx->begin()) {
@@ -275,7 +205,7 @@ void setup() {
 
 void loop() {
   gfx->fillRect(0, 0, 60, 20, BLACK);
-  gfx->drawRect(1, 1, w - 1, h - 1, MAGENTA);
+  // gfx->drawRect(1, 1, w - 1, h - 1, MAGENTA);
 
   frames.Next(millis());
   frames.Debug();
