@@ -34,7 +34,7 @@ bool Grain::move() {
 
   this->x = this->x;
   this->y = this->y + this->velo;
-  gfx->drawPixel(this->x, this->y, WHITE);
+  this->gfx->drawPixel(this->x, this->y, WHITE);
 
   return true;
 }

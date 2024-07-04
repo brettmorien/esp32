@@ -1,6 +1,8 @@
 #include <Arduino_GFX_Library.h>
 #include "grain.h"
-$include "draw.h"
+#include "draw.h"
+#include "source.h"
+#include "world.h"
 
 #define GFX_DEV_DEVICE LILYGO_T_DISPLAY_S3_AMOLED
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
@@ -26,108 +28,14 @@ uint8_t tsa, tsb, tsc, ds;
   Obstacles
 */
 
-class World {
-private:
-  uint8_t PROGMEM *surface;
-  int w;
-  int h;
-  //  gravity
-public:
 
-  World(int w, int h) {
-    this->w = w;
-    this->h = h;
-
-    int worldSize = w * h / 8;
-    this->surface = new uint8_t[worldSize];
-    int start = (h - 5) * w / 8;
-    for (int i = 0; i < worldSize; i++) {
-      this->surface[i] = (i < start) ? 0 : 255;
-    }
-  }
-
-  void drawGrain(int x, int y) {
-    //  W: 240, H: 536
-    int byte = y * (w / 8) + (x + 7) / 8;
-    int bit = x % 8;
-
-    gfx->drawPixel(x, y, WHITE);
-    this->surface[byte] = this->surface[byte] | 1 << bit;
-  }
-
-  void drawWorld() {
-    gfx->drawBitmap(0, 0, this->surface, this->w, this->h, WHITE);
-  }
-
-  bool hit(int x, int y) {
-    //  W: 240, H: 536
-    int byte = y * (w / 8) + (x + 7) / 8;
-    int bit = x % 8;
-
-    return (this->surface[byte] & 1 << (x % 8));
-  }
-};
 
 World *world;
 
-const int numGrains = 300;
-class Source {
-public:
-  // int numGrains = 300;
-  int velo = 3;
-  int dropWindow = 10;
-  int x = cx;
-  int y = 5;
-  int interval;
-  Grain grains[numGrains];
-  int nextIndex = 0;
 
-  Source() {
-    int rate = 5;
-    this->interval = 1000/rate;
-    // this->grains = new Grain[numGrains];
-    // for (int i = 0; i < numGrains; i++) {
-    //   this->dropGrain(i);
-    // }
-
-    Serial.println("Done creating source");
-
-  }
-
-  int lastDropTime;
-  void next(int time) {
-    int count = time / interval - lastDropTime / interval;
-
-    if (count > 0) {
-      this->lastDropTime = (time / interval) * interval;  // round down to interval
-      for (int i=0; i < count; ++i) {
-        this->dropGrain(this->nextIndex + i);
-      }
-      this->nextIndex = (this->nextIndex + count) % numGrains;
-    }
-  }
-
-  void updateGrains() {
-    for (int i = 0; i < numGrains; i++) {
-      Grain grain = this->grains[i];
-      grain.Update();
-    }
-  }
-
-private:
-  void dropGrain(int index) {
-    Grain *grain = &this->grains[index];
-
-    int x = random(this->x - this->dropWindow, this->x + this->dropWindow);
-    int y = random(0, 50);
-
-    grain->drop(x, y);
-    grain->velo = this->velo;
-  }
-};
 
 // Serial.println("init source");
-Source* source = new Source();
+Source source = Source();
 
 class FrameData {
 private:

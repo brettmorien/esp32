@@ -7,6 +7,7 @@
 #endif
 
 #include <Arduino.h>
+#include <Arduino_GFX_Library.h>
 
 class Grain {
 public:
@@ -14,6 +15,7 @@ public:
   uint32_t y;
   int32_t velo;
   bool active;
+  Arduino_GFX *gfx;
 
   void drop(int x, int y);
   void Update();
