@@ -3,10 +3,11 @@
 
 #include <Arduino.h>
 #include "grain.h"
+#include "world.h"
 
 class Source {
 public:
-  Source();
+  Source(World* world);
 
   int numGrains = 300;
   int velo = 3;

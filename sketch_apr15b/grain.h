@@ -8,6 +8,7 @@
 
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
+#include "world.h"
 
 class Grain {
 public:
@@ -15,7 +16,11 @@ public:
   uint32_t y;
   int32_t velo;
   bool active;
+  World *world;
   Arduino_GFX *gfx;
+
+  Grain();
+  Grain(World *world);
 
   void drop(int x, int y);
   void Update();

@@ -1,6 +1,10 @@
 #include "grain.h"
 #include <Arduino_GFX_Library.h>
 
+Grain::Grain(World *world) {
+  this->world = world;
+}
+
 void Grain::drop(int x, int y) {
   this->x = x;
   this->y = y;
@@ -27,7 +31,7 @@ bool Grain::move() {
       return true;
     }
 
-    world->drawGrain(this->x, this->y);
+    this->world->drawGrain(this->x, this->y);
 
     return false;
   }
@@ -40,8 +44,9 @@ bool Grain::move() {
 }
 
 int Grain::findBelowDistance() {
+  int h = this->world->h;
   for (int i = 0; i < h - this->y; i++) {
-    if (world->hit(this->x, this->y + i)) {
+    if (this->world->hit(this->x, this->y + i)) {
       return i - 1;
     }
   }
@@ -61,7 +66,7 @@ bool Grain::slide() {
 }
 
 bool Grain::slip(int dist) {
-  if (!world->hit(this->x + dist, this->y + 1)) {
+  if (!this->world->hit(this->x + dist, this->y + 1)) {
     this->x += dist;
     return true;
   }

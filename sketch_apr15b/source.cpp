@@ -1,12 +1,12 @@
 #include "source.h"
 
-Source::Source() {
+Source::Source(World* world) {
   int rate = 5;
   this->interval = 1000 / rate;
   this->grains = new Grain[this->numGrains];
-  // for (int i = 0; i < numGrains; i++) {
-  //   this->dropGrain(i);
-  // }
+  for (int i = 0; i < numGrains; i++) {
+    this->grains[i] = Grain(world);
+  }
 
   Serial.println("Done creating source");
 }

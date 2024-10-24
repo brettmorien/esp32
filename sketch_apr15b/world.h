@@ -7,12 +7,13 @@
 class World {
 private:
   uint8_t PROGMEM *surface;
-  int w;
-  int h;
   Arduino_GFX *gfx;
   
   //  gravity
 public:
+  int w;
+  int h;
+
   World(Arduino_GFX *gfx, int w, int h);
 
   void drawGrain(int x, int y);

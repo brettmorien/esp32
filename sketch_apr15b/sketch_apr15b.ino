@@ -35,7 +35,7 @@ World *world;
 
 
 // Serial.println("init source");
-Source source = Source();
+Source source = Source(world);
 
 class FrameData {
 private:
@@ -104,7 +104,7 @@ void setup() {
   //  W: 240, H: 536
   Serial.printf("Screen - W: %d, H: %d\n", w, h);
 
-  world = new World(w, h);
+  world = new World(gfx, w, h);
 
   source.x = cx;
 
