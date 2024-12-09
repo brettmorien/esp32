@@ -28,14 +28,8 @@ uint8_t tsa, tsb, tsc, ds;
   Obstacles
 */
 
-
-
 World *world;
-
-
-
-// Serial.println("init source");
-Source source = Source(world);
+Source *source;
 
 class FrameData {
 private:
@@ -60,8 +54,7 @@ public:
 
     gfx->setTextSize(tsa);
     gfx->setTextColor(GREEN);
-    // gfx->println(this->last);
-    gfx->println(source.nextIndex);
+    gfx->println(this->current);
   }
 };
 
@@ -103,45 +96,46 @@ void setup() {
 
   //  W: 240, H: 536
   Serial.printf("Screen - W: %d, H: %d\n", w, h);
-
   world = new World(gfx, w, h);
 
-  source.x = cx;
+  source = new Source(world, gfx);
+  source->x = cx;
 
   world->drawWorld();
 }
 
 void loop() {
   gfx->fillRect(0, 0, 60, 20, BLACK);
-  // gfx->drawRect(1, 1, w - 1, h - 1, MAGENTA);
+  gfx->drawRect(1, 1, w - 1, h - 1, MAGENTA);
 
   frames.Next(millis());
   frames.Debug();
 
-  moveSource();
-  source.next(millis());
-  source.updateGrains();
+  // moveSource();
+
+  source->next(millis());
+  source->updateGrains();
 }
 
 bool right = true;
 void moveSource() {
-  gfx->drawPixel(source.x, source.y, BLACK);
+  gfx->drawPixel(source->x, source->y, BLACK);
   int rb = cx + 50;
   int lb = cx - 50;
 
   if (right) {
-    if (source.x < rb) {
-      source.x += 1;
+    if (source->x < rb) {
+      source->x += 1;
     } else {
       right = false;
     }
   } else {
-    if (source.x > lb) {
-      source.x -= 1;
+    if (source->x > lb) {
+      source->x -= 1;
     } else {
       right = true;
     }
   }
-  gfx->drawPixel(source.x, source.y, RED);
+  gfx->drawPixel(source->x, source->y, RED);
 
 }

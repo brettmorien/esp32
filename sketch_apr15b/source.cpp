@@ -1,11 +1,12 @@
 #include "source.h"
+#include "grain.h"
 
-Source::Source(World* world) {
+Source::Source(World* world, Arduino_GFX* gfx) {
   int rate = 5;
   this->interval = 1000 / rate;
   this->grains = new Grain[this->numGrains];
-  for (int i = 0; i < numGrains; i++) {
-    this->grains[i] = Grain(world);
+  for (int i = 0; i < this->numGrains; i++) {
+    this->grains[i] = Grain(world, gfx);
   }
 
   Serial.println("Done creating source");

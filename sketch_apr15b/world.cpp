@@ -31,5 +31,10 @@ bool World::hit(int x, int y) {
   int byte = y * (w / 8) + (x + 7) / 8;
   int bit = x % 8;
 
+  if (byte >= (w * h / 8)) {
+    Serial.printf("byte larger than world size %d\n", byte);
+    return false;
+  }
+
   return (this->surface[byte] & 1 << (x % 8));
 }

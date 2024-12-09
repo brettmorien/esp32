@@ -7,7 +7,7 @@
 
 class Source {
 public:
-  Source(World* world);
+  Source(World* world, Arduino_GFX* gfx);
 
   int numGrains = 300;
   int velo = 3;

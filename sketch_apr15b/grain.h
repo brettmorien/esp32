@@ -12,15 +12,15 @@
 
 class Grain {
 public:
+  Grain();
+  Grain(World *world, Arduino_GFX* gfx);
+
   uint32_t x;
   uint32_t y;
   int32_t velo;
   bool active;
   World *world;
   Arduino_GFX *gfx;
-
-  Grain();
-  Grain(World *world);
 
   void drop(int x, int y);
   void Update();

@@ -1,8 +1,15 @@
 #include "grain.h"
 #include <Arduino_GFX_Library.h>
 
-Grain::Grain(World *world) {
+Grain::Grain() {
+  
+}
+
+Grain::Grain(World *world, Arduino_GFX* gfx) {
   this->world = world;
+  this->gfx = gfx;
+  this->x = 0;
+  this->y = 0;
 }
 
 void Grain::drop(int x, int y) {
@@ -12,18 +19,28 @@ void Grain::drop(int x, int y) {
 }
 
 void Grain::Update() {
+
   if (!this->active) {
     return;
   }
 
-  if (!move()) {
+  if (!this->move()) {
     this->active = false;
   }
 }
 
 bool Grain::move() {
   this->gfx->drawPixel(this->x, this->y, BLACK);
+
+Serial.printf("~~~~~ find? ~~~~~\n");
+
   int dist = this->findBelowDistance();
+
+Serial.printf("~~~~~ founded! ~~~~~\n");
+
+Serial.printf("~~~~~ distance: %d ~~~~~\n", dist);
+
+Serial.flush();
 
   if (dist < this->velo) {
     this->y = this->y + dist;
@@ -45,6 +62,7 @@ bool Grain::move() {
 
 int Grain::findBelowDistance() {
   int h = this->world->h;
+
   for (int i = 0; i < h - this->y; i++) {
     if (this->world->hit(this->x, this->y + i)) {
       return i - 1;
